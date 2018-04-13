@@ -1,0 +1,17 @@
+package crypto
+
+import (
+	"crypto/sha512"
+	"encoding/hex"
+	"io/ioutil"
+)
+
+func GetFileSha512String(file string) string {
+	h := sha512.New()
+	fd, err := ioutil.ReadFile(file)
+	if err != nil {
+		return "error crypto"
+	}
+	h.Write(fd)
+	return hex.EncodeToString(h.Sum(nil))
+}
