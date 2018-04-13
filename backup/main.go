@@ -13,6 +13,7 @@ import (
 )
 
 var pthSep = string(os.PathSeparator)
+//time format "20060102150405.99999"
 var formatString = "200601021504"
 
 func main() {
