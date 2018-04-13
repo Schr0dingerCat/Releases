@@ -13,7 +13,7 @@ import (
 )
 
 var pthSep = string(os.PathSeparator)
-var formatString = "200601020304"
+var formatString = "200601021504"
 
 func main() {
 	//	fmt.Println("hello world")
