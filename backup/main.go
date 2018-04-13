@@ -9,16 +9,18 @@ import (
 	"time"
 
 	"myBackup/archiver"
+	"myBackup/crypto"
 	"myBackup/util"
 )
 
 var pthSep = string(os.PathSeparator)
+
 //time format "20060102150405.99999"
-var formatString = "200601021504"
+var formatString = "2006010215"
 
 func main() {
 	//	fmt.Println("hello world")
-	da := flag.Int("n", 1, "保留最近几个的备份")
+	da := flag.Int("n", 1, "保留最近几个备份")
 	sr := flag.String("src", "C:\\Users\\Default", "需要备份的文件或目录")
 	ds := flag.String("dst", "C:\\Users\\Default", "需要备份的文件备份保存的目录")
 
@@ -30,8 +32,8 @@ func main() {
 	if len(os.Args) == 1 {
 		usage :=
 			`Usage:
-	-days int
-		保留最近几天的备份 (default 1)
+	-n int
+		保留最近几个备份 (default 1)
 	-src string
 		需要备份的文件或目录 (default "C:\\Users\\Default")
 	-dst string
@@ -61,13 +63,29 @@ func main() {
 	}
 	//	fmt.Println(existNames)
 
-	//存在当前日期备份就直接退出
+	//备份src到dst
+	err := archiver.Zip.Make(dst+pthSep+savName+".tmp", []string{src})
+	if err != nil {
+		fmt.Println("zip err: ", err)
+	}
+	newHash := crypto.GetFileSha512String(dst + pthSep + savName + ".tmp")
+
+	//存在当前日期备份
 	isExist, _ := util.IsExists(dst + pthSep + savName)
 	if isExist {
 		info, _ := os.Stat(dst + pthSep + savName)
 		if !info.IsDir() {
-			fmt.Println("当天已备份，退出")
-			return
+			fmt.Println("文件名为", savName, "的文件已存在")
+			//检验sha512是否相同
+			oldHash := crypto.GetFileSha512String(dst + pthSep + savName)
+			fmt.Println(oldHash)
+			fmt.Println(newHash)
+			if strings.Compare(newHash, oldHash) == 0 {
+				os.Remove(dst + pthSep + savName + ".tmp")
+			} else {
+				os.Remove(dst + pthSep + savName)
+				os.Rename(dst+pthSep+savName+".tmp", dst+pthSep+savName)
+			}
 		} else {
 			del := os.Remove(dst + pthSep + savName)
 			fmt.Println("已存在的" + savName + "是目录，已删除")
@@ -75,15 +93,12 @@ func main() {
 				fmt.Println(del)
 			}
 		}
+	} else {
+		os.Rename(dst+pthSep+savName+".tmp", dst+pthSep+savName)
 	}
 	//遍历保存目录下.zip文件
 	fs, _ := util.ListDir(dst, ".zip")
 	//	fmt.Println(fs)
-	//备份src到dst
-	err := archiver.Zip.Make(dst+pthSep+savName, []string{src})
-	if err != nil {
-		fmt.Println("zip err: ", err)
-	}
 	//删除多余备份文件
 	var sc []string = make([]string, 0, 10)
 	for _, f := range fs {
@@ -104,25 +119,42 @@ func main() {
 	sort.Sort(sort.Reverse(sort.StringSlice(sc)))
 	//	fmt.Println(sc)
 	var count int = 0
-	for _, s := range sc {
-		if s < savName1 {
-			if count < days-1 {
-				count++
-				continue
-			} else {
-				del := os.Remove(dst + pthSep + name1 + s + name2)
-				if del != nil {
-					fmt.Println("删除文件错误：", del)
-				} else {
-					fmt.Println("已存在的" + name1 + s + name2 + "，已删除")
-				}
-			}
-		} else {
-			del := os.Remove(dst + pthSep + name1 + s + name2)
+	for i := 0; i < len(sc); i++ {
+		if strings.Compare(sc[i], savName1) > 0 {
+			del := os.Remove(dst + pthSep + name1 + sc[i] + name2)
 			if del != nil {
 				fmt.Println("删除文件错误：", del)
 			} else {
-				fmt.Println("已存在的" + name1 + s + name2 + "，已删除")
+				fmt.Println("已存在的" + name1 + sc[i] + name2 + "，已删除")
+			}
+			continue
+		}
+		if strings.Compare(sc[i], savName1) == 0 {
+			count++
+			continue
+		}
+		if strings.Compare(sc[i], savName1) < 0 {
+			h := crypto.GetFileSha512String(dst + pthSep + name1 + sc[i] + name2)
+			if strings.Compare(newHash, h) == 0 {
+				del := os.Remove(dst + pthSep + name1 + sc[i] + name2)
+				if del != nil {
+					fmt.Println("删除文件错误：", del)
+				} else {
+					fmt.Println("已存在的" + name1 + sc[i] + name2 + " 的hash相同，已删除")
+				}
+				continue
+			} else {
+				if count < days {
+					count++
+					continue
+				} else {
+					del := os.Remove(dst + pthSep + name1 + sc[i] + name2)
+					if del != nil {
+						fmt.Println("删除文件错误：", del)
+					} else {
+						fmt.Println("已存在的" + name1 + sc[i] + name2 + "，已删除")
+					}
+				}
 			}
 		}
 	}
