@@ -16,7 +16,7 @@ import (
 var pthSep = string(os.PathSeparator)
 
 //time format "20060102150405.99999"
-var formatString = "2006010215"
+var formatString = "200601021504"
 
 func main() {
 	//	fmt.Println("hello world")
@@ -120,12 +120,23 @@ func main() {
 	//	fmt.Println(sc)
 	var count int = 0
 	for i := 0; i < len(sc); i++ {
+		info, _ := os.Stat(dst + pthSep + name1 + sc[i] + name2)
+		if info.Size() == 152 {
+			//			fmt.Println("目录为空")
+			del := os.Remove(dst + pthSep + name1 + sc[i] + name2)
+			if del != nil {
+				fmt.Println("1删除文件错误：", del)
+			} else {
+				fmt.Println("1已存在的" + name1 + sc[i] + name2 + "，已删除")
+			}
+			continue
+		}
 		if strings.Compare(sc[i], savName1) > 0 {
 			del := os.Remove(dst + pthSep + name1 + sc[i] + name2)
 			if del != nil {
-				fmt.Println("删除文件错误：", del)
+				fmt.Println("2删除文件错误：", del)
 			} else {
-				fmt.Println("已存在的" + name1 + sc[i] + name2 + "，已删除")
+				fmt.Println("2已存在的" + name1 + sc[i] + name2 + "，已删除")
 			}
 			continue
 		}
@@ -138,21 +149,22 @@ func main() {
 			if strings.Compare(newHash, h) == 0 {
 				del := os.Remove(dst + pthSep + name1 + sc[i] + name2)
 				if del != nil {
-					fmt.Println("删除文件错误：", del)
+					fmt.Println("3删除文件错误：", del)
 				} else {
-					fmt.Println("已存在的" + name1 + sc[i] + name2 + " 的hash相同，已删除")
+					fmt.Println("3已存在的" + name1 + sc[i] + name2 + " 的hash相同，已删除")
 				}
 				continue
 			} else {
+				//				fmt.Println("hash != ", sc[i])
 				if count < days {
 					count++
 					continue
 				} else {
 					del := os.Remove(dst + pthSep + name1 + sc[i] + name2)
 					if del != nil {
-						fmt.Println("删除文件错误：", del)
+						fmt.Println("4删除文件错误：", del)
 					} else {
-						fmt.Println("已存在的" + name1 + sc[i] + name2 + "，已删除")
+						fmt.Println("4已存在的" + name1 + sc[i] + name2 + "，已删除")
 					}
 				}
 			}
