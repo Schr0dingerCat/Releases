@@ -7,18 +7,29 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/excelize"
+	"excelize"
 )
 
 var (
-	result = "Result"
+	index2016 = "2016帐龄"
+	index2017 = "2017帐龄"
+	index2018 = "2018帐龄"
+	i2016     = 1
+	i2017     = 1
+	i2018     = 1
 )
 
 type huopin struct {
-	name      string
-	shangnian []string
-	jiecun    [][]string
-	ruku      [][]string
+	name       string
+	jiezhuan15 []string
+	jiezhuan16 []string
+	jiezhuan17 []string
+	isruku16   bool
+	isruku17   bool
+	isruku18   bool
+	jiecun16   [][]string
+	jiecun17   [][]string
+	jiecun18   [][]string
 }
 
 func MyJiangXu(src [][]string, n int) {
@@ -37,26 +48,22 @@ func MyJiangXu(src [][]string, n int) {
 func main() {
 	f1 := flag.String("filePath", "/home/abc/workspace/2016长和1号仓库年末报表2016年.xlsx", "wen jian pu jing")
 	flag.Parse()
-
 	if len(os.Args) == 1 {
 		usage := `Usage:
-				-filePath string
-						wenjianjueduilujjing`
+	-filePath string	wenjianjueduilujjing`
 		fmt.Println(usage)
 		return
 	}
-
 	xlsx, err := excelize.OpenFile(*f1)
 	//	xlsx, err := excelize.OpenFile("/home/abc/workspace/2016长和1号仓库年末报表2016年.xlsx")
 	if err != nil {
 		fmt.Println(err)
 	}
-
 	var huopinMap = make(map[string]*huopin)
-
 	for _, v := range xlsx.GetSheetMap() {
-		if strings.Compare(v, result) == 0 || strings.Compare(v, "Other") == 0 {
+		if strings.Compare(v, index2016) == 0 || strings.Compare(v, index2017) == 0 || strings.Compare(v, index2018) == 0 || strings.Compare(v, "Other") == 0 {
 			xlsx.DeleteSheet(v)
+			continue
 			//			xlsx.Save()
 		}
 		//		fmt.Println("leneeee:    ", len(xlsx.GetRows(v)))
@@ -64,143 +71,174 @@ func main() {
 			if i == 0 {
 				continue
 			}
+			// 末尾有的有空格
+			row[0] = strings.TrimSpace(row[0])
 			_, ok := huopinMap[row[0]]
 			if !ok {
 				huopinMap[row[0]] = new(huopin)
 				huopinMap[row[0]].name = row[0]
 			}
-			if strings.Contains(row[3], "_上年") {
-				huopinMap[row[0]].shangnian = row
+			if strings.Contains(row[2], "2015年结转") {
+				huopinMap[row[0]].jiezhuan15 = row
 			}
-			if strings.Contains(row[3], "月_结存") {
-				huopinMap[row[0]].jiecun = append(huopinMap[row[0]].jiecun, row)
+			if strings.Contains(row[2], "2016年结转") {
+				huopinMap[row[0]].jiezhuan16 = row
 			}
-			if strings.Compare(row[4], "0") != 0 {
-				huopinMap[row[0]].ruku = append(huopinMap[row[0]].ruku, row)
+			if strings.Contains(row[2], "2017年结转") {
+				huopinMap[row[0]].jiezhuan17 = row
+			}
+			if strings.Contains(row[2], "月_结存") {
+
+				if strings.Compare(row[1], "2016") == 0 {
+					huopinMap[row[0]].jiecun16 = append(huopinMap[row[0]].jiecun16, row)
+				}
+				if strings.Compare(row[1], "2017") == 0 {
+					huopinMap[row[0]].jiecun17 = append(huopinMap[row[0]].jiecun17, row)
+				}
+				if strings.Compare(row[1], "2018") == 0 {
+					huopinMap[row[0]].jiecun18 = append(huopinMap[row[0]].jiecun18, row)
+				}
+			}
+			if strings.Compare(row[3], "0") != 0 {
+				if strings.Contains(row[1], "2016") {
+					huopinMap[row[0]].isruku16 = true
+				}
+				if strings.Contains(row[1], "2017") {
+					huopinMap[row[0]].isruku17 = true
+				}
+				if strings.Contains(row[1], "2018") {
+					huopinMap[row[0]].isruku18 = true
+				}
 			}
 		}
 	}
 	//chuligegehuopin
-	r := 1
+	index := xlsx.NewSheet(index2016)
+	xlsx.NewSheet(index2017)
+	xlsx.NewSheet(index2018)
+	xlsx.SetCellValue(index2016, "A"+strconv.Itoa(i2016), "场内编号")
+	xlsx.SetCellValue(index2016, "B"+strconv.Itoa(i2016), "年份")
+	xlsx.SetCellValue(index2016, "C"+strconv.Itoa(i2016), "摘要")
+	xlsx.SetCellValue(index2016, "D"+strconv.Itoa(i2016), "入库数量")
+	xlsx.SetCellValue(index2016, "E"+strconv.Itoa(i2016), "库存数量")
+	xlsx.SetCellValue(index2016, "F"+strconv.Itoa(i2016), "帐龄")
+	i2016++
+	xlsx.SetCellValue(index2017, "A"+strconv.Itoa(i2017), "场内编号")
+	xlsx.SetCellValue(index2017, "B"+strconv.Itoa(i2017), "年份")
+	xlsx.SetCellValue(index2017, "C"+strconv.Itoa(i2017), "摘要")
+	xlsx.SetCellValue(index2017, "D"+strconv.Itoa(i2017), "入库数量")
+	xlsx.SetCellValue(index2017, "E"+strconv.Itoa(i2017), "库存数量")
+	xlsx.SetCellValue(index2017, "F"+strconv.Itoa(i2017), "帐龄")
+	i2017++
+	xlsx.SetCellValue(index2018, "A"+strconv.Itoa(i2018), "场内编号")
+	xlsx.SetCellValue(index2018, "B"+strconv.Itoa(i2018), "年份")
+	xlsx.SetCellValue(index2018, "C"+strconv.Itoa(i2018), "摘要")
+	xlsx.SetCellValue(index2018, "D"+strconv.Itoa(i2018), "入库数量")
+	xlsx.SetCellValue(index2018, "E"+strconv.Itoa(i2018), "库存数量")
+	xlsx.SetCellValue(index2018, "F"+strconv.Itoa(i2018), "帐龄")
+	i2018++
+
 	q := 1
-	index := xlsx.NewSheet(result)
 	xlsx.NewSheet("Other")
-	xlsx.SetCellValue(result, "A"+strconv.Itoa(r), "场内编号")
-	xlsx.SetCellValue(result, "B"+strconv.Itoa(r), "编号")
-	xlsx.SetCellValue(result, "C"+strconv.Itoa(r), "日期")
-	xlsx.SetCellValue(result, "D"+strconv.Itoa(r), "摘要")
-	xlsx.SetCellValue(result, "E"+strconv.Itoa(r), "入库数量")
-	xlsx.SetCellValue(result, "F"+strconv.Itoa(r), "出库数量")
-	xlsx.SetCellValue(result, "G"+strconv.Itoa(r), "库存数量")
-	xlsx.SetCellValue(result, "H"+strconv.Itoa(r), "备注")
-	xlsx.SetCellValue(result, "I"+strconv.Itoa(r), "标记")
-	r++
 	xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "标记")
-	xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), "场内编号")
+	xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), "厂内编号")
 	q++
-	for _, v := range huopinMap {
-		//		fmt.Println(v)
-		if len(v.jiecun) < 1 {
-			fmt.Println("没有结存：", v.name)
-			xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "没有结存")
+
+	for k, v := range huopinMap {
+		if len(v.jiecun16) < 1 && len(v.jiecun17) < 1 && len(v.jiecun18) < 1 {
+			xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "3年没结存")
 			xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
+			xlsx.SetCellValue("Other", "C"+strconv.Itoa(q), len(v.jiecun16))
+			xlsx.SetCellValue("Other", "D"+strconv.Itoa(q), len(v.jiecun17))
+			xlsx.SetCellValue("Other", "E"+strconv.Itoa(q), len(v.jiecun18))
+			xlsx.SetCellValue("Other", "F"+strconv.Itoa(q), v.isruku16)
+			xlsx.SetCellValue("Other", "G"+strconv.Itoa(q), v.isruku17)
+			xlsx.SetCellValue("Other", "H"+strconv.Itoa(q), v.isruku18)
 			q++
 			continue
 		}
-		MyJiangXu(v.jiecun, 3)
-		if len(v.jiecun[0][6]) == 0 {
-			fmt.Println("最后一个月结存为空：", v.name)
-			xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "最后一个月结存为空")
-			xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
-			q++
-			continue
-		} else if strings.Compare(v.jiecun[0][6], "0") == 0 {
-			fmt.Println("最后一个月结存为0：", v.name)
-			xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "最后一个月结存为0")
-			xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
-			q++
-			continue
-		} else if strings.Contains(v.jiecun[0][6], "-") {
-			fmt.Println("最后一个月结存为负：", v.name)
-			xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "最后一个月结存为负")
-			xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
-			q++
-			continue
-		}
-		num, err := strconv.Atoi(v.jiecun[0][6])
-		if err != nil {
-			fmt.Println("结存数转换失败", v.name)
-			xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "结存数转换失败")
-			xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
-			q++
-			continue
-		}
-		//最后月结存不为零
-		xlsx.SetCellValue(result, "A"+strconv.Itoa(r), v.jiecun[0][0])
-		xlsx.SetCellValue(result, "B"+strconv.Itoa(r), v.jiecun[0][1])
-		xlsx.SetCellValue(result, "C"+strconv.Itoa(r), v.jiecun[0][2])
-		xlsx.SetCellValue(result, "D"+strconv.Itoa(r), v.jiecun[0][3])
-		xlsx.SetCellValue(result, "E"+strconv.Itoa(r), v.jiecun[0][4])
-		xlsx.SetCellValue(result, "F"+strconv.Itoa(r), v.jiecun[0][5])
-		xlsx.SetCellValue(result, "G"+strconv.Itoa(r), v.jiecun[0][6])
-		xlsx.SetCellValue(result, "H"+strconv.Itoa(r), v.jiecun[0][7])
-		if len(v.ruku) == 0 {
-			xlsx.SetCellValue(result, "I"+strconv.Itoa(r), "本年没有入库")
-		}
-		r++
-		if len(v.ruku) > 0 {
-			MyJiangXu(v.ruku, 2)
-		} else {
-			continue
-		}
-		if len(v.shangnian) == 0 {
-			fmt.Println("上年结存数据没有：", v.name)
-			xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "上年结存数据没有")
-			xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
-			q++
-		} else {
-			xlsx.SetCellValue(result, "A"+strconv.Itoa(r), v.shangnian[0])
-			xlsx.SetCellValue(result, "B"+strconv.Itoa(r), v.shangnian[1])
-			xlsx.SetCellValue(result, "C"+strconv.Itoa(r), v.shangnian[2])
-			xlsx.SetCellValue(result, "D"+strconv.Itoa(r), v.shangnian[3])
-			xlsx.SetCellValue(result, "E"+strconv.Itoa(r), v.shangnian[4])
-			xlsx.SetCellValue(result, "F"+strconv.Itoa(r), v.shangnian[5])
-			xlsx.SetCellValue(result, "G"+strconv.Itoa(r), v.shangnian[6])
-			xlsx.SetCellValue(result, "H"+strconv.Itoa(r), v.shangnian[7])
-			r++
-		}
-		n := 0
-		for i := 0; i < len(v.ruku); i++ {
-			m, err := strconv.Atoi(v.ruku[i][4])
-			if err != nil {
-				fmt.Println("入库数转换失败", v.name)
-				xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "入库数转换失败")
-				xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
-				q++
-				continue
+		//2016年帐龄
+		if len(v.jiecun16) > 0 {
+			MyJiangXu(v.jiecun16, 2)
+			if len(v.jiezhuan16) > 0 {
+				if strings.Compare(v.jiecun16[0][4], v.jiezhuan16[4]) != 0 {
+					xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "2016最后结存不等于2016结转")
+					xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
+					q++
+				}
 			}
-			n += m
-			xlsx.SetCellValue(result, "A"+strconv.Itoa(r), v.ruku[i][0])
-			xlsx.SetCellValue(result, "B"+strconv.Itoa(r), v.ruku[i][1])
-			xlsx.SetCellValue(result, "C"+strconv.Itoa(r), v.ruku[i][2])
-			xlsx.SetCellValue(result, "D"+strconv.Itoa(r), v.ruku[i][3])
-			xlsx.SetCellValue(result, "E"+strconv.Itoa(r), v.ruku[i][4])
-			xlsx.SetCellValue(result, "F"+strconv.Itoa(r), v.ruku[i][5])
-			xlsx.SetCellValue(result, "G"+strconv.Itoa(r), v.ruku[i][6])
-			xlsx.SetCellValue(result, "H"+strconv.Itoa(r), v.ruku[i][7])
-			r++
-			if n >= num {
-				break
+			//最后一个月结存
+			if strings.Compare(v.jiecun16[0][4], "0") != 0 {
+				xlsx.SetCellValue(index2016, "A"+strconv.Itoa(i2016), v.jiecun16[0][0])
+				xlsx.SetCellValue(index2016, "B"+strconv.Itoa(i2016), v.jiecun16[0][1])
+				xlsx.SetCellValue(index2016, "C"+strconv.Itoa(i2016), v.jiecun16[0][2])
+				xlsx.SetCellValue(index2016, "D"+strconv.Itoa(i2016), v.jiecun16[0][3])
+				xlsx.SetCellValue(index2016, "E"+strconv.Itoa(i2016), v.jiecun16[0][4])
+				if v.isruku16 {
+					xlsx.SetCellValue(index2016, "F"+strconv.Itoa(i2016), "1年")
+				} else {
+					xlsx.SetCellValue(index2016, "F"+strconv.Itoa(i2016), "1年以上")
+				}
+				i2016++
 			}
 		}
-		if n < num {
-			fmt.Println("本年入库数小于年底结存数：", v.name)
-			xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "本年入库数小于年底结存数")
-			xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
-			q++
+		//2017帐龄
+		if len(v.jiecun17) > 0 {
+			MyJiangXu(v.jiecun17, 2)
+			if len(v.jiezhuan17) > 0 {
+				if strings.Compare(v.jiecun17[0][4], v.jiezhuan17[4]) != 0 {
+					xlsx.SetCellValue("Other", "A"+strconv.Itoa(q), "2017最后结存不等于2017结转")
+					xlsx.SetCellValue("Other", "B"+strconv.Itoa(q), v.name)
+					q++
+				}
+			}
+			//最后一个月结存
+			if strings.Compare(v.jiecun17[0][4], "0") != 0 {
+				xlsx.SetCellValue(index2017, "A"+strconv.Itoa(i2017), v.jiecun17[0][0])
+				xlsx.SetCellValue(index2017, "B"+strconv.Itoa(i2017), v.jiecun17[0][1])
+				xlsx.SetCellValue(index2017, "C"+strconv.Itoa(i2017), v.jiecun17[0][2])
+				xlsx.SetCellValue(index2017, "D"+strconv.Itoa(i2017), v.jiecun17[0][3])
+				xlsx.SetCellValue(index2017, "E"+strconv.Itoa(i2017), v.jiecun17[0][4])
+				if v.isruku17 {
+					xlsx.SetCellValue(index2017, "F"+strconv.Itoa(i2017), "1年")
+				} else {
+					if v.isruku16 {
+						xlsx.SetCellValue(index2017, "F"+strconv.Itoa(i2017), "2年")
+					} else {
+						xlsx.SetCellValue(index2017, "F"+strconv.Itoa(i2017), "2年以上")
+					}
+				}
+				i2017++
+			}
+		}
+		//2018帐龄
+		if len(v.jiecun18) > 0 {
+			MyJiangXu(v.jiecun18, 2)
+			//最后一个月结存
+			if strings.Compare(v.jiecun18[0][4], "0") != 0 {
+				xlsx.SetCellValue(index2018, "A"+strconv.Itoa(i2018), v.jiecun18[0][0])
+				xlsx.SetCellValue(index2018, "B"+strconv.Itoa(i2018), v.jiecun18[0][1])
+				xlsx.SetCellValue(index2018, "C"+strconv.Itoa(i2018), v.jiecun18[0][2])
+				xlsx.SetCellValue(index2018, "D"+strconv.Itoa(i2018), v.jiecun18[0][3])
+				xlsx.SetCellValue(index2018, "E"+strconv.Itoa(i2018), v.jiecun18[0][4])
+				if v.isruku18 {
+					xlsx.SetCellValue(index2018, "F"+strconv.Itoa(i2018), "1年")
+				} else {
+					if v.isruku17 {
+						xlsx.SetCellValue(index2018, "F"+strconv.Itoa(i2018), "2年")
+					} else {
+						if v.isruku16 {
+							xlsx.SetCellValue(index2018, "F"+strconv.Itoa(i2018), "3年")
+						} else {
+							xlsx.SetCellValue(index2018, "F"+strconv.Itoa(i2018), "3年以上")
+						}
+					}
+				}
+				i2018++
+			}
 		}
 	}
 	xlsx.SetActiveSheet(index)
-	xlsx.SetSheetVisible(result, true)
+	xlsx.SetSheetVisible(index2016, true)
 	xlsx.Save()
 }
