@@ -17,8 +17,8 @@ type mujudaihao struct {
 }
 
 var (
-	sheetName  = "模具库db"
-	sheetName1 = "库存-新"
+	sheetName  = "模具仓库db"
+	sheetName1 = "模具仓库"
 )
 
 func main() {
